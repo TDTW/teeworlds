@@ -2315,7 +2315,7 @@ int main(int argc, const char **argv) // ignore_convention
 	pClient->RegisterInterfaces();
 
 	// create the components
-	IEngine *pEngine = CreateEngine("Teeworlds");
+	IEngine *pEngine = CreateEngine("Teeworlds TDTW Client");
 	IConsole *pConsole = CreateConsole(CFGFLAG_CLIENT);
 	IStorage *pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_CLIENT, argc, argv); // ignore_convention
 	IConfig *pConfig = CreateConfig();
