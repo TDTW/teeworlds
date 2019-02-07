@@ -1,0 +1,35 @@
+language: cpp
+
+dist: trusty
+sudo: required
+group: edge
+
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      env:
+        - COMPILER=g++-8
+        - CFLAGS="-Wdeclaration-after-statement -Werror"
+        - CXXFLAGS="-Werror"
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-8', 'cmake', 'libfreetype6-dev', 'libsdl2-dev']
+
+
+script:
+  - # make sure CXX is correctly set
+  - if [[ "${COMPILER}" != "" ]]; then export CXX=${COMPILER}; fi
+  # by default, use the single-header version
+  - if [[ "${MULTIPLE_HEADERS}" == "" ]]; then export MULTIPLE_HEADERS=OFF; fi
+
+  - uname -a
+  - $CXX --version
+
+  - mkdir build
+  - git submodule update --init
+  - ls
+  - cmake . -DCMAKE_BUILD_TYPE=Release
+  - cmake --build ./build --target teeworlds --config Release
