@@ -15,8 +15,8 @@ matrix:
         - CXXFLAGS="-Werror"
       addons:
         apt:
-          sources: ['libfreetype6-dev', 'libsdl2-dev']
-          packages: ['g++-8']
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-8', 'cmake', 'libfreetype6-dev', 'libsdl2-dev']
 
 
 script:
