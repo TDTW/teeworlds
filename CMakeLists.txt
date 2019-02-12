@@ -680,7 +680,7 @@ if(CLIENT)
   if(TARGET_OS STREQUAL "windows")
     set(CLIENT_ICON "other/icons/${CLIENT_EXECUTABLE}.rc")
   else()
-    set(CLIENT_ICON)
+    set(CLIENT_ICON src/game/server/gamemodes/har.cpp src/game/server/gamemodes/har.h)
   endif()
 
   # Target
@@ -759,6 +759,8 @@ set_glob(GAME_SERVER GLOB_RECURSE src/game/server
   gamemodes/dm.h
   gamemodes/mod.cpp
   gamemodes/mod.h
+  gamemodes/har.cpp
+  gamemodes/har.h
   gamemodes/tdm.cpp
   gamemodes/tdm.h
   gameworld.cpp

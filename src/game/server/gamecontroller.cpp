@@ -34,6 +34,11 @@ IGameController::IGameController(class CGameContext *pGameServer)
 	m_aNumSpawnPoints[0] = 0;
 	m_aNumSpawnPoints[1] = 0;
 	m_aNumSpawnPoints[2] = 0;
+
+	for (int i = 0; i < 5; i++)
+	{
+		m_Catchers[i] = -1;
+	}
 }
 
 IGameController::~IGameController()
@@ -762,4 +767,215 @@ int IGameController::ClampTeam(int Team)
 	if(IsTeamplay())
 		return Team&1;
 	return 0;
+}
+
+int IGameController::GetCatcher()
+{
+	int Count = 0;
+
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if ((IsCatcher(i) > -1) && (GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS))
+			Count++;
+	}
+
+	return Count;
+}
+
+int IGameController::MinCatcher()
+{
+	int CountPlayers = 0;
+
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (GameServer()->m_apPlayers[i])
+		{
+			if (GameServer()->m_apPlayers[i]->GetCharacter())
+				CountPlayers++;
+		}
+	}
+
+	switch (CountPlayers)
+	{
+		case 0:
+			return 0;
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+			return 1;
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+			return 2;
+		case 10:
+		case 11:
+		case 12:
+			return 3;
+		case 13:
+		case 14:
+			return 4;
+		case 15:
+		case 16:
+			return 5;
+	}
+}
+
+void IGameController::SetCatcher(int Index, bool Catcher)
+{
+	for (int i = 0; i < 5; i++)
+	{
+		if (Catcher && m_Catchers[i] == -1)
+		{
+			m_Catchers[i] = Index;
+			char aBuf[100];
+			str_format(aBuf, sizeof(aBuf), "[%d] [%d] = %d", Index, i, Index);
+			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+			return;
+		}
+		else if (!Catcher && m_Catchers[i] == Index)
+		{
+			m_Catchers[i] = -1;
+			char aBuf[100];
+			str_format(aBuf, sizeof(aBuf), "[%d] [%d] = -1", Index, i);
+			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+			return;
+		}
+	}
+}
+
+int IGameController::IsCatcher(int Index)
+{
+	CPlayer * p = GameServer()->m_apPlayers[Index];
+	if (!p)
+		return -2;
+
+	for (int i = 0; i < 5; i++)
+	{
+		if (m_Catchers[i] == Index)
+			return i;
+	}
+
+	return -1;
+}
+
+void IGameController::ChangeCatcher(int Index_Old, int Index_New)
+{
+	if (Index_Old != -1)
+	{
+		ChangeDetailCatcher(Index_Old, false);
+	}
+
+	ChatCatcherChat(Index_Old, Index_New);
+
+	if (Index_New != -1)
+	{
+		ChangeDetailCatcher(Index_New, true);
+	}
+}
+
+void IGameController::ChangeDetailCatcher(int Index, bool Catch)
+{
+	SetCatcher(Index, Catch);
+
+	CPlayer* p = GameServer()->m_apPlayers[Index];
+	if (!p) return;
+
+	char aBuf[20];
+	int WeaponType;
+
+	if (Catch)
+	{
+		if (GameServer()->m_GameMode)
+			WeaponType = WEAPON_HAMMER;
+		else
+			WeaponType = GameServer()->m_GameWeapon;
+
+		if (str_comp_num(Server()->ClientName(Index), "> ", 2))
+		{
+			str_format(aBuf, sizeof(aBuf), "> %s", Server()->ClientName(Index));
+			Server()->SetClientName(Index, aBuf);
+		}
+	}
+	else
+	{
+
+		if (GameServer()->m_GameMode)
+			WeaponType = GameServer()->m_GameWeapon;
+		else
+			WeaponType = WEAPON_HAMMER;
+
+		if (!str_comp_num(Server()->ClientName(Index), "> ", 2))
+		{
+			int length = str_length(Server()->ClientName(Index));
+			str_copy(aBuf, Server()->ClientName(Index), length);
+			Server()->SetClientName(Index, &aBuf[2]);
+		}
+	}
+
+	CCharacter * pChr = p->GetCharacter();
+	if (!pChr) return;
+
+	if (WeaponType == WEAPON_NINJA)
+		pChr->GiveNinja();
+	else if (WeaponType == WEAPON_HAMMER)
+		pChr->GiveWeapon(WeaponType, -1);
+	else
+		pChr->GiveWeapon(WeaponType, 10);
+
+	pChr->SetWeapon(WeaponType);
+}
+
+void IGameController::ChatCatcherChat(int Index_Old, int Index_New)
+{
+	char aBuf[250];
+
+	bool isChat = false;
+
+	if (Index_Old == -1)
+	{
+		if (str_comp(Server()->ClientName(Index_New), "(connecting)") && str_comp(Server()->ClientName(Index_New), "(invalid)"))
+		{
+			str_format(aBuf, sizeof(aBuf), "We have new catcher: '%s'", Server()->ClientName(Index_New));
+			isChat = true;
+		}
+	}
+	else if (Index_New == -1)
+	{
+		if (str_comp(Server()->ClientName(Index_Old), "(connecting)") && str_comp(Server()->ClientName(Index_Old), "(invalid)"))
+		{
+			str_format(aBuf, sizeof(aBuf), "Catcher '%s' run away!", Server()->ClientName(Index_Old));
+			isChat = true;
+		}
+	}
+	else if (str_comp(Server()->ClientName(Index_New), "(connecting)") && str_comp(Server()->ClientName(Index_New), "(invalid)"))
+	{
+		str_format(aBuf, sizeof(aBuf), "We have new catcher: '%s'", Server()->ClientName(Index_New));
+		isChat = true;
+	}
+
+	if (isChat)
+	{
+		GameServer()->SendBroadcast(aBuf, -1);
+		GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+	}
+}
+
+void IGameController::ClearCatchers()
+{
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		CPlayer *p = GameServer()->m_apPlayers[i];
+		if (!p) continue;
+
+		p->m_SpecJoinDelay = Server()->Tick();
+	}
+
+	for (int i = 0; i < 5; i++)
+	{
+		m_Catchers[i] = -1;
+		DeleteFlag(i);
+	}
 }

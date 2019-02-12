@@ -42,7 +42,8 @@ protected:
 	bool EvaluateSpawn(class CPlayer *pP, vec2 *pPos);
 
 	void CycleMap();
-	void ResetGame();
+
+	int m_Catchers[5]; // Index players
 
 	char m_aMapWish[128];
 
@@ -144,6 +145,21 @@ public:
 	int ClampTeam(int Team);
 
 	virtual void PostReset();
+
+	int GetCatcher();
+	int MinCatcher();
+
+	void SetCatcher(int Index, bool Catcher);
+	int IsCatcher(int Index);
+	virtual void ChangeCatcher(int Index_Old, int Index_New);
+	void ChangeDetailCatcher(int Index, bool Catch);
+	void ChatCatcherChat(int Index_Old, int Index_New);
+	void ClearCatchers();
+	virtual int IsFlagCharacter(int Index) { return 0; }
+	virtual void ResetGame();
+	virtual void CreateFlags(int m_Index) {}
+	virtual void DeleteFlags(int m_Index) {}
+	virtual void DeleteFlag(int Index) {}
 };
 
 #endif

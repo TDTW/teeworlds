@@ -34,6 +34,7 @@ public:
 
 	void KillCharacter(int Weapon = WEAPON_GAME);
 	CCharacter *GetCharacter();
+	CTuningParams MyTuning; // TDTW: Rename
 
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
@@ -62,6 +63,7 @@ public:
 	int m_LastChangeInfo;
 	int m_LastEmote;
 	int m_LastKill;
+	int m_SendBroadcastTick; // TDTW: Rename
 
 	// TODO: clean this up
 	struct
@@ -95,6 +97,8 @@ public:
 		int m_Min;
 		int m_Max;
 	} m_Latency;
+
+	int m_SpecJoinDelay;	// TDTW: rename
 
 private:
 	CCharacter *m_pCharacter;

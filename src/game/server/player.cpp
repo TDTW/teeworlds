@@ -21,6 +21,8 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+	m_SpecJoinDelay = 0;
+	m_SendBroadcastTick = 0;
 }
 
 CPlayer::~CPlayer()
@@ -105,6 +107,9 @@ void CPlayer::PostTick()
 		}
 	}
 
+	if (m_pCharacter)
+		m_pCharacter->SetVisibleSize(m_pCharacter->GetPlayer()->m_Latency.m_Min + 50.0f);
+
 	// update view pos for spectators
 	if(m_Team == TEAM_SPECTATORS && m_SpectatorID != SPEC_FREEVIEW && GameServer()->m_apPlayers[m_SpectatorID])
 		m_ViewPos = GameServer()->m_apPlayers[m_SpectatorID]->m_ViewPos;
@@ -170,6 +175,11 @@ void CPlayer::OnDisconnect(const char *pReason)
 
 		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", m_ClientID, Server()->ClientName(m_ClientID));
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+	}
+
+	if (GameServer()->m_pController->IsCatcher(m_ClientID) > -1)
+	{
+		GameServer()->m_pController->ChangeCatcher(m_ClientID, -1);
 	}
 }
 
@@ -249,6 +259,17 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 		return;
 
 	char aBuf[512];
+
+	if (Team != TEAM_SPECTATORS)
+	{
+		if (Server()->Tick() < m_SpecJoinDelay)
+		{
+			str_format(aBuf, sizeof(aBuf), "You can't join game! Wait %d seconds!", (m_SpecJoinDelay - Server()->Tick()) / Server()->TickSpeed());
+			GameServer()->SendChatTarget(GetCID(), aBuf);
+			return;
+		}
+	}
+
 	if(DoChatMsg)
 	{
 		str_format(aBuf, sizeof(aBuf), "'%s' joined the %s", Server()->ClientName(m_ClientID), GameServer()->m_pController->GetTeamName(Team));
@@ -269,6 +290,14 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 
 	if(Team == TEAM_SPECTATORS)
 	{
+		if (GameServer()->m_pController->IsCatcher(m_ClientID) > -1)
+		{
+			GameServer()->m_pController->ChangeCatcher(m_ClientID, -1);
+			if (!GameServer()->m_GameMode)
+			{
+				m_SpecJoinDelay = Server()->Tick() + Server()->TickSpeed() * g_Config.m_SvSpecJoinDelay;
+			}
+		}
 		// update spectator modes
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
