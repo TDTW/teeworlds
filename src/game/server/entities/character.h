@@ -66,9 +66,6 @@ public:
 
 	// TDTW: Rename
 	void NullWeapon();
-
-	int GetCharacterDelayTime() { return m_Core.m_DelayTime; }
-	void SetVisibleSize(float Size) { m_Core.m_VisibleSize = Size; }
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;

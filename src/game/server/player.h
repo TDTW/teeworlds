@@ -98,8 +98,6 @@ public:
 		int m_Max;
 	} m_Latency;
 
-	int m_SpecJoinDelay;	// TDTW: rename
-
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;

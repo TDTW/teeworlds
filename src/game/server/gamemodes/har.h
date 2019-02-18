@@ -19,7 +19,6 @@ public:
 
 	virtual void Tick();
 	void FlagTick();
-	void TuneTick();
 	int CountFlag();
 	virtual int IsFlagCharacter(int Index);
 	virtual void Snap(int SnappingClient);

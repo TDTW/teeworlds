@@ -72,9 +72,6 @@ void CCharacterCore::Reset()
 	m_HookedPlayer = -1;
 	m_Jumped = 0;
 	m_TriggeredEvents = 0;
-	m_DelayTime = 0;
-	m_Visible = true;
-	m_VisibleSize = 50.0f;
 }
 
 void CCharacterCore::Tick(bool UseInput)
@@ -96,10 +93,6 @@ void CCharacterCore::Tick(bool UseInput)
 	float MaxSpeed = Grounded ? m_pWorld->m_Tuning.m_GroundControlSpeed : m_pWorld->m_Tuning.m_AirControlSpeed;
 	float Accel = Grounded ? m_pWorld->m_Tuning.m_GroundControlAccel : m_pWorld->m_Tuning.m_AirControlAccel;
 	float Friction = Grounded ? m_pWorld->m_Tuning.m_GroundFriction : m_pWorld->m_Tuning.m_AirFriction;
-
-    if (m_DelayTime > 0) {
-        m_DelayTime--;
-    }
 
 	// handle input
 	if(UseInput)
@@ -226,13 +219,6 @@ void CCharacterCore::Tick(bool UseInput)
 				vec2 ClosestPoint = closest_point_on_line(m_HookPos, NewPos, pCharCore->m_Pos);
 				if(distance(pCharCore->m_Pos, ClosestPoint) < PhysSize+2.0f)
 				{
-				    // TDTW: Do something with
-                    if (m_DelayTime > 0 || pCharCore->m_DelayTime > 0) {
-                        m_Visible = false;
-                        continue;
-                    } else {
-                        m_Visible = true;
-                    }
 					if (m_HookedPlayer == -1 || distance(m_HookPos, pCharCore->m_Pos) < Distance)
 					{
 						m_TriggeredEvents |= COREEVENT_HOOK_ATTACH_PLAYER;
@@ -332,14 +318,6 @@ void CCharacterCore::Tick(bool UseInput)
 			float Distance = distance(m_Pos, pCharCore->m_Pos);
 			vec2 Dir = normalize(m_Pos - pCharCore->m_Pos);
 
-			// TDTW: do something
-            if (Distance < m_VisibleSize && (m_DelayTime > 0 || pCharCore->m_DelayTime > 0)) {
-                m_Visible = false;
-                continue;
-            } else {
-                m_Visible = true;
-            }
-
             if(m_pWorld->m_Tuning.m_PlayerCollision && Distance < PhysSize*1.25f && Distance > 0.0f)
 			{
 				float a = (PhysSize*1.45f - Distance);
@@ -406,15 +384,6 @@ void CCharacterCore::Move()
 				if(!pCharCore || pCharCore == this)
 					continue;
 				float D = distance(Pos, pCharCore->m_Pos);
-                if (D < m_VisibleSize && (m_DelayTime > 0 || pCharCore->m_DelayTime > 0))
-                {
-                    m_Visible = false;
-                    continue;
-                }
-                else
-                {
-                    m_Visible = true;
-                }
 
                 if(D < 28.0f && D > 0.0f)
 				{

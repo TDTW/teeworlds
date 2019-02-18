@@ -36,7 +36,6 @@ void CGameContext::Construct(int Resetting)
 	m_NumVoteOptions = 0;
 	m_LockTeams = 0;
 
-	m_GameMode = 0;
 	m_GameWeapon = 0;
 
 	if(Resetting==NO_RESET)
@@ -1546,55 +1545,6 @@ void CGameContext::ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *p
 	}
 }
 
-void CGameContext::ConSetGameMode(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	pSelf->m_GameMode = pResult->GetInteger(0);
-
-	//chat message
-	if (pSelf->m_GameMode)
-		pSelf->SendChat(-1, CHAT_ALL, "Current game mode: All vs. 1 ");
-	else
-		pSelf->SendChat(-1, CHAT_ALL, "Current game mode: 1 vs. All ");
-
-	for (int i = 0; i < MAX_CLIENTS; i++)
-	{
-		CCharacter *pChr = pSelf->GetPlayerChar(i);
-		if (!pChr)
-			continue;
-
-		pChr->NullWeapon();
-		int Catch = pSelf->m_pController->IsCatcher(i);
-
-		int WeaponType;
-
-		if (Catch > -1)
-		{
-			if (pSelf->m_GameMode)
-				WeaponType = WEAPON_HAMMER;
-			else
-				WeaponType = pSelf->m_GameWeapon;
-		}
-		else
-		{
-
-			if (pSelf->m_GameMode)
-				WeaponType = pSelf->m_GameWeapon;
-			else
-				WeaponType = WEAPON_HAMMER;
-		}
-
-		if (WeaponType == WEAPON_NINJA)
-			pChr->GiveNinja();
-		else if (WeaponType == WEAPON_HAMMER)
-			pChr->GiveWeapon(WeaponType, -1);
-		else
-			pChr->GiveWeapon(WeaponType, 10);
-
-		pChr->SetWeapon(WeaponType);
-	}
-}
-
 void CGameContext::ConSetGameWeapon(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
@@ -1636,18 +1586,11 @@ void CGameContext::ConSetGameWeapon(IConsole::IResult *pResult, void *pUserData)
 
 		if (Catch > -1)
 		{
-			if (pSelf->m_GameMode)
-				WeaponType = WEAPON_HAMMER;
-			else
-				WeaponType = pSelf->m_GameWeapon;
+			WeaponType = pSelf->m_GameWeapon;
 		}
 		else
 		{
-
-			if (pSelf->m_GameMode)
-				WeaponType = pSelf->m_GameWeapon;
-			else
-				WeaponType = WEAPON_HAMMER;
+			WeaponType = WEAPON_HAMMER;
 		}
 
 		if (WeaponType == WEAPON_NINJA)
@@ -1687,7 +1630,6 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("clear_votes", "", CFGFLAG_SERVER, ConClearVotes, this, "Clears the voting options");
 	Console()->Register("vote", "r", CFGFLAG_SERVER, ConVote, this, "Force a vote to yes/no");
 
-	Console()->Register("sv_game_mode", "i", CFGFLAG_SERVER, ConSetGameMode, this, "0 - One/vs/All    1 - All/vs/One");
 	Console()->Register("sv_game_weapon", "i", CFGFLAG_SERVER, ConSetGameWeapon, this, "Game weapon");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);

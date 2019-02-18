@@ -59,17 +59,11 @@ void CGameControllerHAR::OnCharacterSpawn(CCharacter *pChr)
 
     if (Catch > -1)
     {
-        if (GameServer()->m_GameMode)
-            WeaponType = WEAPON_HAMMER;
-        else
-            WeaponType = GameServer()->m_GameWeapon;
+        WeaponType = GameServer()->m_GameWeapon;
     }
     else
     {
-        if (GameServer()->m_GameMode)
-            WeaponType = GameServer()->m_GameWeapon;
-        else
-            WeaponType = WEAPON_HAMMER;
+        WeaponType = WEAPON_HAMMER;
     }
 
     if (WeaponType == WEAPON_NINJA)
@@ -91,7 +85,6 @@ void CGameControllerHAR::Tick()
 
     FlagTick();
     SendBroadcastTick();
-    TuneTick();
 
     // Change nickname (if catcher)
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -143,17 +136,8 @@ void CGameControllerHAR::Tick()
     {
         for (int i = 0; i < MAX_CLIENTS; i++)
         {
-            if (GameServer()->m_GameMode)
-            {
-                if (IGameController::IsCatcher(i) > -1 && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
-                    if (IsFlagCharacter(i) != -1)
-                        GameServer()->m_apPlayers[i]->m_Score++;
-            }
-            else
-            {
-                if (IGameController::IsCatcher(i) == -1 && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
-                    GameServer()->m_apPlayers[i]->m_Score++;
-            }
+            if (IGameController::IsCatcher(i) == -1 && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+                GameServer()->m_apPlayers[i]->m_Score++;
         }
     }
 }
@@ -227,11 +211,6 @@ void CGameControllerHAR::FlagTick()
 
                 F->m_pCarryingCharacter = apCloseCCharacters[i];
 
-                if (GameServer()->m_GameMode)
-                {
-                    GameServer()->m_World.m_Core.m_apCharacters[Index]->m_DelayTime = Server()->TickSpeed() * 3;
-                }
-
                 if (Blue_Flag[Index])
                     Blue_Flag[Index]->m_pCarryingCharacter = apCloseCCharacters[i];
 
@@ -300,8 +279,6 @@ void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
     if (Index_Old != -1)
     {
         if (IsFlagCharacter(Index_Old) == -1 && Index_New != -1)
-            return;
-        if (GameServer()->m_World.m_Core.m_apCharacters[Index_Old] && GameServer()->m_World.m_Core.m_apCharacters[Index_Old]->m_DelayTime > 0)
             return;
 
         int IndexFlag = IGameController::IsCatcher(Index_Old);
@@ -437,49 +414,6 @@ void CGameControllerHAR::DeleteFlag(int i)
     }
 }
 
-void CGameControllerHAR::TuneTick()
-{
-    for (int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if (!GameServer()->m_apPlayers[i])
-            continue;
-
-        if (!GameServer()->m_apPlayers[i]->GetCharacter())
-            continue;
-
-        CTuningParams OldTuning = GameServer()->m_apPlayers[i]->MyTuning;
-        CTuningParams NewTuning = OldTuning;
-
-        if (GameServer()->m_World.m_Core.m_apCharacters[i]->m_DelayTime > 0 || !GameServer()->m_World.m_Core.m_apCharacters[i]->m_Visible)
-        {
-            if (Server()->Tick() % (Server()->TickSpeed() / 5) && GameServer()->m_World.m_Core.m_apCharacters[i]->m_DelayTime > 0)
-            {
-                // make sure that the damage indicators doesn't group together
-                GameServer()->CreateDamageInd(GameServer()->GetPlayerChar(i)->m_Pos, Server()->Tick() * 0.35f, 1);
-            }
-
-            NewTuning.Set("player_collision", 0);
-            NewTuning.Set("player_hooking", 0);
-        }
-        else
-        {
-            NewTuning.Set("player_collision", 1);
-            NewTuning.Set("player_hooking", 1);
-        }
-
-        if (mem_comp(&OldTuning, &NewTuning, sizeof(CTuningParams)) != 0)
-        {
-            CMsgPacker Msg(NETMSGTYPE_SV_TUNEPARAMS);
-            int *pParams = (int *)&NewTuning;
-            for (unsigned j = 0; j < sizeof(NewTuning) / sizeof(int); j++)
-                Msg.AddInt(pParams[j]);
-
-            Server()->SendMsg(&Msg, MSGFLAG_VITAL, i);
-            GameServer()->m_apPlayers[i]->MyTuning = NewTuning;
-        }
-    }
-}
-
 void CGameControllerHAR::SendBroadcastTick()
 {
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -488,35 +422,19 @@ void CGameControllerHAR::SendBroadcastTick()
             continue;
         if (Server()->Tick() > GameServer()->m_apPlayers[i]->m_SendBroadcastTick)
         {
-            if (!GameServer()->m_GameMode && IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) == -1)
+            if (IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) == -1)
             {
                 GameServer()->SendBroadcast("Take the RED flag", i);
                 continue;
             }
-            if (!GameServer()->m_GameMode && IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) > -1)
+            if (IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) > -1)
             {
                 GameServer()->SendBroadcast("Catch the players", i);
                 continue;
             }
-            if (!GameServer()->m_GameMode && IGameController::IsCatcher(i) == -1)
+            if (IGameController::IsCatcher(i) == -1)
             {
                 GameServer()->SendBroadcast("Run away from catchers", i);
-                continue;
-            }
-            if (GameServer()->m_GameMode && IGameController::IsCatcher(i) == -1)
-            {
-                GameServer()->SendBroadcast("Catch the flagtakers", i);
-                continue;
-            }
-            if (GameServer()->m_GameMode && IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) == -1)
-            {
-                GameServer()->SendBroadcast("Take the RED flag", i);
-                continue;
-            }
-
-            if (GameServer()->m_GameMode && IGameController::IsCatcher(i) > -1 && IsFlagCharacter(i) > -1)
-            {
-                GameServer()->SendBroadcast("Run away from other players", i);
                 continue;
             }
 

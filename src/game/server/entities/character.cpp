@@ -175,9 +175,6 @@ void CCharacter::HandleNinja()
 				if (distance(aEnts[i]->m_Pos, m_Pos) > (m_ProximityRadius * 2.0f))
 					continue;
 
-                if (aEnts[i]->GetCharacterDelayTime() > 0)
-                    continue;
-
 				// Hit a player, give him damage and stuffs...
 				GameServer()->CreateSound(aEnts[i]->m_Pos, SOUND_NINJA_HIT);
 				// set his velocity to fast upward (for now)
@@ -304,9 +301,6 @@ void CCharacter::FireWeapon()
 
 				if ((pTarget == this) || GameServer()->Collision()->IntersectLine(ProjStartPos, pTarget->m_Pos, NULL, NULL))
 					continue;
-
-                if (pTarget->GetCharacterDelayTime() > 0)
-                    continue;
 
 				// set his velocity to fast upward (for now)
 				if(length(pTarget->m_Pos-ProjStartPos) > 0.0f)
@@ -707,25 +701,11 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		return false;
 
     // TDTW: Return here and remake
-    int i1;
-    int i2;
-
-    if (GameServer()->m_GameMode)
+    if (GameServer()->m_pController->IsCatcher(From) > -1)
     {
-        i1 = From;
-        i2 = m_pPlayer->GetCID();
-    }
-    else
-    {
-        i1 = m_pPlayer->GetCID();
-        i2 = From;
-    }
-
-    if (GameServer()->m_pController->IsCatcher(i2) > -1)
-    {
-        if (GameServer()->m_pController->IsCatcher(i1) == -1)
+        if (GameServer()->m_pController->IsCatcher(m_pPlayer->GetCID()) == -1)
         {
-            GameServer()->m_pController->ChangeCatcher(i2, i1);
+            GameServer()->m_pController->ChangeCatcher(From, m_pPlayer->GetCID());
         }
     }
 

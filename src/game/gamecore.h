@@ -186,11 +186,6 @@ public:
 	int m_HookState;
 	int m_HookedPlayer;
 
-	// TDTW: Refactor names
-	int m_DelayTime;
-	bool m_Visible;
-	float m_VisibleSize;
-
 	int m_Jumped;
 
 	int m_Direction;
