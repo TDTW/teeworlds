@@ -152,9 +152,6 @@ public:
 	void SetCatcher(int Index, bool Catcher);
 	int IsCatcher(int Index);
 	virtual void ChangeCatcher(int Index_Old, int Index_New);
-	void ChangeDetailCatcher(int Index, bool Catch);
-	void ChatCatcherChat(int Index_Old, int Index_New);
-	void ClearCatchers();
 	virtual int IsFlagCharacter(int Index) { return 0; }
 	virtual void ResetGame();
 	virtual void CreateFlags(int m_Index) {}

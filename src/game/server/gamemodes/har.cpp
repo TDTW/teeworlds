@@ -86,30 +86,6 @@ void CGameControllerHAR::Tick()
     FlagTick();
     SendBroadcastTick();
 
-    // Change nickname (if catcher)
-    for (int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if (IGameController::IsCatcher(i) > -1)
-        {
-            if (str_comp_num(Server()->ClientName(i), "> ", 2))
-            {
-                char aBuf[20];
-                str_format(aBuf, sizeof(aBuf), "> %s", Server()->ClientName(i));
-                Server()->SetClientName(i, aBuf);
-            }
-        }
-        else if (IGameController::IsCatcher(i) == -1)
-        {
-            if (!str_comp_num(Server()->ClientName(i), "> ", 2))
-            {
-                char aBuf[20];
-                int length = str_length(Server()->ClientName(i));
-                str_copy(aBuf, Server()->ClientName(i), length);
-                Server()->SetClientName(i, &aBuf[2]);
-            }
-        }
-    }
-
     // Check catchers if enough
     if (Server()->Tick() % Server()->TickSpeed() == 0)
     {
@@ -292,14 +268,14 @@ void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
             GameServer()->CreateSoundGlobal(SOUND_CTF_DROP);
         }
 
-        IGameController::ChangeDetailCatcher(Index_Old, false);
+        ChangeDetailCatcher(Index_Old, false);
     }
 
-    IGameController::ChatCatcherChat(Index_Old, Index_New);
+    ChatCatcherChat(Index_Old, Index_New);
 
     if (Index_New != -1)
     {
-        IGameController::ChangeDetailCatcher(Index_New, true);
+        ChangeDetailCatcher(Index_New, true);
     }
 
     //ChangeCatcher(-1, Random);
@@ -325,6 +301,94 @@ void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
             m_Flag[fi] = F;
             GameServer()->m_World.InsertEntity(F);
         }
+    }
+}
+
+void CGameControllerHAR::ChangeDetailCatcher(int Index, bool Catch)
+{
+    SetCatcher(Index, Catch);
+
+    CPlayer* p = GameServer()->m_apPlayers[Index];
+    if (!p) return;
+
+    int WeaponType;
+
+    if (Catch)
+    {
+        WeaponType = GameServer()->m_GameWeapon;
+
+        char catcherName[MAX_NAME_LENGTH];
+        str_format(realCatcherName, MAX_NAME_LENGTH, Server()->ClientName(Index));
+        str_format(catcherName, MAX_NAME_LENGTH, "> %s", Server()->ClientName(Index));
+        Server()->SetClientName(Index, catcherName);
+    }
+    else
+    {
+        WeaponType = WEAPON_HAMMER;
+
+        Server()->SetClientName(Index, realCatcherName);
+    }
+
+    CCharacter * pChr = p->GetCharacter();
+    if (!pChr) return;
+
+    if (WeaponType == WEAPON_NINJA)
+        pChr->GiveNinja();
+    else if (WeaponType == WEAPON_HAMMER)
+        pChr->GiveWeapon(WeaponType, -1);
+    else
+        pChr->GiveWeapon(WeaponType, 10);
+
+    pChr->SetWeapon(WeaponType);
+}
+
+void CGameControllerHAR::ChatCatcherChat(int Index_Old, int Index_New)
+{
+    char aBuf[250];
+
+    bool isChat = false;
+
+    if (Index_Old == -1)
+    {
+        if (str_comp(Server()->ClientName(Index_New), "(connecting)") && str_comp(Server()->ClientName(Index_New), "(invalid)"))
+        {
+            str_format(aBuf, sizeof(aBuf), "We have new catcher: '%s'", Server()->ClientName(Index_New));
+            isChat = true;
+        }
+    }
+    else if (Index_New == -1)
+    {
+        if (str_comp(Server()->ClientName(Index_Old), "(connecting)") && str_comp(Server()->ClientName(Index_Old), "(invalid)"))
+        {
+            str_format(aBuf, sizeof(aBuf), "Catcher '%s' run away!", Server()->ClientName(Index_Old));
+            isChat = true;
+        }
+    }
+    else if (str_comp(Server()->ClientName(Index_New), "(connecting)") && str_comp(Server()->ClientName(Index_New), "(invalid)"))
+    {
+        str_format(aBuf, sizeof(aBuf), "We have new catcher: '%s'", Server()->ClientName(Index_New));
+        isChat = true;
+    }
+
+    if (isChat)
+    {
+        GameServer()->SendBroadcast(aBuf, -1);
+        GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+    }
+}
+
+void CGameControllerHAR::ClearCatchers()
+{
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        CPlayer *p = GameServer()->m_apPlayers[i];
+        if (!p) continue;
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+        m_Catchers[i] = -1;
+        DeleteFlag(i);
     }
 }
 
