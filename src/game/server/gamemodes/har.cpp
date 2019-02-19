@@ -13,7 +13,7 @@
 CGameControllerHAR::CGameControllerHAR(CGameContext *pGameServer)
         : IGameController(pGameServer)
 {
-    m_pGameType = "H&R";
+    m_pGameType = "Catch";
 
     for (int i = 0; i < 5; i++)
     {
@@ -237,6 +237,13 @@ int CGameControllerHAR::IsFlagCharacter(int Index)
     return -1;
 }
 
+void CGameControllerHAR::OnPlayerNameChange(class CPlayer *pP)
+{
+    if (IsCatcher(pP->GetCID()) >= 0) {
+        ChangeNameCatcher(pP->GetCID(), true);
+    }
+}
+
 void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
 {
     //ChangeCatcher(Random, -1);
@@ -268,14 +275,18 @@ void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
             GameServer()->CreateSoundGlobal(SOUND_CTF_DROP);
         }
 
-        ChangeDetailCatcher(Index_Old, false);
+        SetCatcher(Index_Old, false);
+        ChangeNameCatcher(Index_Old, false);
+        SetWeaponCatcher(Index_Old, false);
     }
 
     ChatCatcherChat(Index_Old, Index_New);
 
     if (Index_New != -1)
     {
-        ChangeDetailCatcher(Index_New, true);
+        SetCatcher(Index_New, true);
+        ChangeNameCatcher(Index_New, true);
+        SetWeaponCatcher(Index_New, true);
     }
 
     //ChangeCatcher(-1, Random);
@@ -304,19 +315,10 @@ void CGameControllerHAR::ChangeCatcher(int Index_Old, int Index_New)
     }
 }
 
-void CGameControllerHAR::ChangeDetailCatcher(int Index, bool Catch)
+void CGameControllerHAR::ChangeNameCatcher(int Index, bool Catch)
 {
-    SetCatcher(Index, Catch);
-
-    CPlayer* p = GameServer()->m_apPlayers[Index];
-    if (!p) return;
-
-    int WeaponType;
-
     if (Catch)
     {
-        WeaponType = GameServer()->m_GameWeapon;
-
         char catcherName[MAX_NAME_LENGTH];
         str_format(realCatcherName, MAX_NAME_LENGTH, Server()->ClientName(Index));
         str_format(catcherName, MAX_NAME_LENGTH, "> %s", Server()->ClientName(Index));
@@ -324,20 +326,34 @@ void CGameControllerHAR::ChangeDetailCatcher(int Index, bool Catch)
     }
     else
     {
-        WeaponType = WEAPON_HAMMER;
-
         Server()->SetClientName(Index, realCatcherName);
     }
+}
+
+void CGameControllerHAR::SetWeaponCatcher(int Index, bool Catch)
+{
+    CPlayer* p = GameServer()->m_apPlayers[Index];
+    if (!p) return;
 
     CCharacter * pChr = p->GetCharacter();
     if (!pChr) return;
+
+    int WeaponType;
+    if (Catch)
+    {
+        WeaponType = GameServer()->m_GameWeapon;
+    }
+    else
+    {
+        WeaponType = WEAPON_HAMMER;
+    }
 
     if (WeaponType == WEAPON_NINJA)
         pChr->GiveNinja();
     else if (WeaponType == WEAPON_HAMMER)
         pChr->GiveWeapon(WeaponType, -1);
     else
-        pChr->GiveWeapon(WeaponType, 10);
+        pChr->GiveWeapon(WeaponType, 5);
 
     pChr->SetWeapon(WeaponType);
 }

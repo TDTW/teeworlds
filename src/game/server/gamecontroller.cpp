@@ -344,6 +344,7 @@ void IGameController::OnPlayerInfoChange(class CPlayer *pP)
 	}
 }
 
+void IGameController::OnPlayerNameChange(class CPlayer *pP) {}
 
 int IGameController::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon)
 {

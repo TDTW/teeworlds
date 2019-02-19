@@ -19,8 +19,10 @@ public:
 	virtual bool OnEntity(int Index, vec2 Pos);
 	virtual void OnCharacterSpawn(CCharacter *pChr);
 	virtual void ChangeCatcher(int Index_Old, int Index_New);
+	virtual void OnPlayerNameChange(class CPlayer *pP);
 
-	void ChangeDetailCatcher(int Index, bool Catch);
+	void ChangeNameCatcher(int Index, bool Catch);
+	void SetWeaponCatcher(int Index, bool Catch);
 	void ChatCatcherChat(int Index_Old, int Index_New);
 	void ClearCatchers();
 
